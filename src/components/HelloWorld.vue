@@ -38,9 +38,12 @@ export default {
     this.$nextTick(()=>{
       let canvas = this.$refs.canvas
       ctx = canvas.getContext ? canvas.getContext('2d') : {}
-      canvas.addEventListener('click', (e) => {
+      canvas.addEventListener('click', () => {
         let { x, y } = lastPoint
-
+        // 超出棋盘不绘制
+        if (this.overChessBoard(x, y)) {
+          return
+        }
         if (this.piecePoints.find(v => v.x === x && v.y === y )) {
           return
         }
@@ -48,24 +51,16 @@ export default {
         nowPoint = lastPoint
         this.piecePoints.push(nowPoint)
         this[`${this.currentPlayer}PiecePoints`].push(nowPoint)
-
-        console.log('piecePoints', this.piecePoints)
+        
         this.clearSelectBox(x, y, dash_box_wh)
         this.paintPiece(x, y, ctx)
       })
       canvas.addEventListener('mousemove', (event) => {
         let { layerX, layerY } = event
         this.paintBox(layerX, layerY, ctx)
-        if(event.region) {
-          alert('hit region: ' + event.region);
-        }
       });
       this.paintGrid(box_w, box_h)
-      ctx = canvas.getContext ? canvas.getContext('2d') : {}
-        // this.paintDashSelect(60, 60, ctx, 40)
-      //   var rectangle = new Path2D();
-      //   rectangle.rect(start_x, start_y, box_w, box_h);
-      //   ctx.stroke(rectangle);
+      
     })
   },
   methods: {
@@ -78,7 +73,7 @@ export default {
         let x = i * WIDTH + start_x
         let y0 = start_y
         let y1 = boxHeight + start_y
-        // debugger;
+        
         ctx.moveTo(x, y0)
         ctx.lineTo(x, y1)
       }
@@ -87,7 +82,7 @@ export default {
         let y = i * HEIGHT + start_y
         let x0 = start_x
         let x1 = boxHeight + start_x
-        // debugger;
+        
         ctx.moveTo(x0, y)
         ctx.lineTo(x1, y)
       }
@@ -101,29 +96,19 @@ export default {
       let y_bs = Math.round((layerY - start_y) / (HEIGHT))
       let x = x_bs * WIDTH + start_x
       let y = y_bs * WIDTH + start_y
-      // console.log('layerX', layerX, 'layerY', layerY)
-      // console.log('x_bs', x_bs, 'y_bs', y_bs)
+      
       x = x < 0 ? start_x : x
       y = y < 0 ? start_y : y
-      // console.log('now',x, y)
-
       
       if (lastPoint) {
         let { x: lx, y: ly } = lastPoint
-        // console.log(lx - wh / 2, ly - wh / 2)
-        // if (x === lx && y === ly) {
-        //   return
-        // }
         // 如果已点击，则表示棋子已下，则不清空
         // 鼠标经过曾经下过的棋子，也不清空
         let lastPointHas = !!this.piecePoints.find(v => v.x === lx && v.y === ly)
-        console.log('lastPointHas', lastPointHas)
-        // debugger;
+        
         if (!lastPointHas) {
           this.clearSelectBox(lx, ly, wh)
         }
-        console.log('last', lx, ly)
-        // console.log('clear', lx - wh / 2, ly - wh / 2)
       }
       
       lastPoint = {
@@ -135,7 +120,7 @@ export default {
         return
       }
       // 超出棋盘不绘制
-      if (layerX < start_x || layerX > box_w + start_x || layerY < start_y || layerY > box_h + start_y) {
+      if (this.overChessBoard(layerX, layerY)) {
         return
       }
       
@@ -147,7 +132,6 @@ export default {
     paintDashSelect(x, y, ctx, width) {
       let lineW = width / 3
       // 左上角折线
-      // debugger;
       ctx.beginPath()
       ctx.moveTo(x, y + lineW)
       ctx.lineTo(x, y)
@@ -185,6 +169,10 @@ export default {
       }
       ctx.fill()
       ctx.stroke()
+    },
+    // 是否超出棋盘
+    overChessBoard(x, y) {
+      return x < start_x || x > box_w + start_x || y < start_y || y > box_h + start_y
     }
   }
 }
